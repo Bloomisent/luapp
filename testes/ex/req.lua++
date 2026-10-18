@@ -1,0 +1,10 @@
+local current_dir = (arg and arg[0]) and string.match(arg[0], "^(.-)[^/\\ ]+$") or ""
+package.path = string.format("%s;%s?.lua;%s?.lua++", package.path, current_dir, current_dir)
+
+local module = require("m");
+
+print(module.version);
+module.say_hello("Bob");
+
+local x <const> = 10;
+x = 20;

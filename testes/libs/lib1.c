@@ -1,5 +1,5 @@
-#include "lua.h"
-#include "lauxlib.h"
+#include "../../lua.h"
+#include "../../lauxlib.h"
 
 static int id (lua_State *L) {
   return lua_gettop(L);
@@ -32,7 +32,7 @@ LUAMOD_API int anotherfunc (lua_State *L) {
   lua_pushfstring(L, "%d%%%d\n", (int)lua_tointeger(L, 1),
                                  (int)lua_tointeger(L, 2));
   return 1;
-} 
+}
 
 
 LUAMOD_API int luaopen_lib1_sub (lua_State *L) {

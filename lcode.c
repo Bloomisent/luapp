@@ -13,6 +13,7 @@
 #include <float.h>
 #include <limits.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "lua.h"
@@ -1760,6 +1761,18 @@ void luaK_infix (FuncState *fs, BinOpr op, expdesc *v) {
       /* else keep numeral, which may be an immediate operand */
       break;
     }
+    case OPR_NILUSE: {
+      int r, tmp;
+      luaK_exp2nextreg(fs, v);        /* left value into a fresh temp */
+      r = v->u.info;
+      tmp = fs->freereg;
+      luaK_reserveregs(fs, 1);
+      luaK_nil(fs, tmp, 1);           /* tmp = nil */
+      /* jump (skip the right side) when R[r] ~= nil */
+      v->t = condjump(fs, OP_EQ, r, tmp, 0, 0);
+      fs->freereg = tmp;              /* release the temp */
+      break;
+    }
     default: lua_assert(0);
   }
 }
@@ -1847,6 +1860,15 @@ void luaK_posfix (FuncState *fs, BinOpr opr,
       else  /* regular case (two registers) */
         codebinexpval(fs, opr, e1, e2, line);
       break;
+    }
+    case OPR_NILUSE: {
+      int r = e1->u.info;
+      luaK_exp2nextreg(fs, e2);
+      luaK_codeABC(fs, OP_MOVE, r, e2->u.info, 0);
+      fs->freereg = r + 1;
+      luaK_patchtohere(fs, e1->t);
+      e1->t = NO_JUMP;
+      break;                            /* e1 is still VNONRELOC in r */
     }
     case OPR_EQ: case OPR_NE: {
       codeeq(fs, opr, e1, e2);

@@ -1,0 +1,45 @@
+local x: number = 1;
+local s: string? = nil;
+local u: number | string = "a";
+print(x, s, u);
+
+print(pcall(function() local y: number = "hi" end));
+print(pcall(function(a: number) return a end, "hi"));
+print(pcall(function(a: number) return a end, 5));
+
+print(pcall(function()
+    local x: number = 1;
+    x += "oops";
+    return x;
+end)); ## errors, good.
+
+print(pcall(function()
+    local x: number = 1;
+    x = "oops";
+    return x;
+end)); ## errors, very good
+
+print(pcall(function()
+    local a: integer = 10 / 2;    ## ERROR: '/' always yields a float (5.0)
+    return a;
+end));
+
+print(pcall(function()
+    local b: integer = 10 // 2;   ## ok
+    return b;
+end));
+
+print(pcall(function()
+    local c: integer = 3.0;       ## ERROR, is a float (3.0)
+    return c;
+end));
+
+print(pcall(function()
+    local d: integer = math.floor(2.5);   ## ok (floor returns an integer)
+    return d;
+end));
+
+print(pcall(function()
+    local e: integer = 2^2;       ## ERROR: '^' always yields a float
+    return e;
+end));

@@ -1,0 +1,7 @@
+class Cake
+
+end ## testing classes with nothing in them
+
+class Donut
+    sprinkles : number
+end ## testing classes with no functions, just variables

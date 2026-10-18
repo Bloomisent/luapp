@@ -45,11 +45,15 @@
 static const char *const luaX_tokens [] = {
     "and", "break", "do", "else", "elseif",
     "end", "false", "for", "function", "global", "goto", "if",
+    "continue",
     "in", "local", "nil", "not", "or", "repeat",
-    "return", "then", "true", "until", "while",
-    "//", "..", "...", "==", ">=", "<=", "~=",
-    "<<", ">>", "::", "<eof>",
-    "<number>", "<integer>", "<name>", "<string>", "class"
+    "return", "then", "true", "until", "class", "while",
+    "//", "..", "...", "==", ">=", "<=", "!=",
+    "<<", ">>",
+    "+=", "-=", "*=", "/=", "//=", "^=", "%=", "??=",
+    "++", "--",
+    "??", "::", "<eof>",
+    "<number>", "<integer>", "<name>", "<string>"
 };
 
 
@@ -472,13 +476,9 @@ static int llex (LexState *ls, SemInfo *seminfo) {
         inclinenumber(ls);
         break;
       }
-      case ' ': case '\f': case '\t': case '\v': {  /* spaces */
+      case '#': {  /* comments */
         next(ls);
-        break;
-      }
-      case '-': {  /* '-' or '--' (comment) */
-        next(ls);
-        if (ls->current != '-') return '-';
+        if (ls->current != '#') return '#';
         /* else is a comment */
         next(ls);
         if (ls->current == '[') {  /* long comment? */
@@ -495,6 +495,37 @@ static int llex (LexState *ls, SemInfo *seminfo) {
           next(ls);  /* skip until end of line (or end of file) */
         break;
       }
+      case ' ': case '\f': case '\t': case '\v': {  /* spaces */
+        next(ls);
+        break;
+      }
+      case '+': {
+        next(ls);
+        if (check_next1(ls, '+')) return TK_ADDADD;  /* '++' */
+        if (check_next1(ls, '=')) return TK_SADD;  /* '+=' */
+        else return '+';
+      }
+      case '-': {  /* '-' or '-=' */
+        next(ls);
+        if (check_next1(ls, '-')) return TK_MINMIN;  /* '--' */
+        else if (check_next1(ls, '=')) return TK_SMIN;  /* '-=' */
+        else return '-';
+      }
+      case '*': {
+        next(ls);
+        if (check_next1(ls, '=')) return TK_SMULT;  /* '*=' */
+        else return '*';
+      }
+      case '^': {
+        next(ls);
+        if (check_next1(ls, '=')) return TK_SPOW;  /* '^=' */
+        else return '^';
+      }
+      case '%': {
+        next(ls);
+        if (check_next1(ls, '=')) return TK_SMOD;  /* '%=' */
+        else return '%';
+      }
       case '[': {  /* long string or simply '[' */
         size_t sep = skip_sep(ls);
         if (sep >= 2) {
@@ -510,6 +541,25 @@ static int llex (LexState *ls, SemInfo *seminfo) {
         if (check_next1(ls, '=')) return TK_EQ;  /* '==' */
         else return '=';
       }
+      case '!': {
+        next(ls);
+        if (check_next1(ls, '=')) {
+            return TK_NE;  /* '!=' */
+        } else {
+            lexerror(ls, "'!' on it's own is invalid syntax! (Did you mean '!='?)", TK_NE);
+            return '!';
+        }
+      }
+      case '?': {
+        next(ls);
+        if (check_next1(ls, '?')) {
+            if (check_next1(ls, '=')) {
+                return TK_SNILUSE;  /* '??=' */
+            };
+            return TK_NILUSE;  /* '??' */
+        }
+        return '?';
+      }
       case '<': {
         next(ls);
         if (check_next1(ls, '=')) return TK_LE;  /* '<=' */
@@ -524,13 +574,15 @@ static int llex (LexState *ls, SemInfo *seminfo) {
       }
       case '/': {
         next(ls);
-        if (check_next1(ls, '/')) return TK_IDIV;  /* '//' */
+        if (check_next1(ls, '=')) return TK_SDIV;  /* '/=' */
+        if (check_next1(ls, '/')) {
+            if (check_next1(ls, '=')) return TK_SIDIV;  /* '//=' */
+            return TK_IDIV;
+        }  /* '//' */
         else return '/';
       }
       case '~': {
-        next(ls);
-        if (check_next1(ls, '=')) return TK_NE;  /* '~=' */
-        else return '~';
+        return '~';
       }
       case ':': {
         next(ls);
@@ -574,7 +626,7 @@ static int llex (LexState *ls, SemInfo *seminfo) {
             return TK_NAME;
           }
         }
-        else {  /* single-char tokens ('+', '*', '%', '{', '}', ...) */
+        else {  /* single-char tokens ('{', '}', ...) */
           int c = ls->current;
           next(ls);
           return c;

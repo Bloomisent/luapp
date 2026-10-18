@@ -7,6 +7,8 @@
 #ifndef lopcodes_h
 #define lopcodes_h
 
+#define TMASK_INT  (1 << 9)   /* number tag is 3, so 9 is free; ANY (0x1FF) stays tags 0-8 */
+
 #include "llimits.h"
 #include "lobject.h"
 
@@ -328,23 +330,27 @@ OP_FORLOOP,/*	A Bx	update counters; if loop continues then pc-=Bx; */
 OP_FORPREP,/*	A Bx	<check values and prepare counters>;
                         if not to run then pc+=Bx+1;			*/
 
-OP_TFORPREP,/*	A Bx	create upvalue for R[A + 3]; pc+=Bx		*/
-OP_TFORCALL,/*	A C	R[A+4], ... ,R[A+3+C] := R[A](R[A+1], R[A+2]);	*/
-OP_TFORLOOP,/*	A Bx	if R[A+2] ~= nil then { R[A]=R[A+2]; pc -= Bx }	*/
+OP_TFORPREP, /*	A Bx	create upvalue for R[A + 3]; pc+=Bx		*/
+OP_TFORCALL, /*	A C	R[A+4], ... ,R[A+3+C] := R[A](R[A+1], R[A+2]);	*/
+OP_TFORLOOP, /*	A Bx	if R[A+2] ~= nil then { R[A]=R[A+2]; pc -= Bx }	*/
 
-OP_SETLIST,/*	A vB vC k	R[A][vC+i] := R[A+i], 1 <= i <= vB	*/
+OP_SETLIST, /*	A vB vC k	R[A][vC+i] := R[A+i], 1 <= i <= vB	*/
 
-OP_CLOSURE,/*	A Bx	R[A] := closure(KPROTO[Bx])			*/
+OP_CLOSURE, /*	A Bx	R[A] := closure(KPROTO[Bx])			*/
 
-OP_VARARG,/*	A B C k	R[A], ..., R[A+C-2] = varargs  			*/
+OP_VARARG, /*	A B C k	R[A], ..., R[A+C-2] = varargs  			*/
 
 OP_GETVARG, /* A B C	R[A] := R[B][R[C]], R[B] is vararg parameter    */
 
-OP_ERRNNIL,/*	A Bx	raise error if R[A] ~= nil (K[Bx - 1] is global name)*/
+OP_ERRNNIL, /*	A Bx	raise error if R[A] ~= nil (K[Bx - 1] is global name)*/
 
-OP_VARARGPREP,/* 	(adjust varargs)				*/
+OP_VARARGPREP, /* 	(adjust varargs)				*/
 
-OP_EXTRAARG/*	Ax	extra (larger) argument for previous opcode	*/
+OP_CHECKTYPE,
+
+OP_EXTRAARG, /*	Ax	extra (larger) argument for previous opcode	*/
+
+OP_NILUSE // ?? binop
 } OpCode;
 
 

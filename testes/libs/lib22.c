@@ -2,8 +2,8 @@
 
 #include <string.h>
 
-#include "lua.h"
-#include "lauxlib.h"
+#include "../../lua.h"
+#include "../../lauxlib.h"
 
 static int id (lua_State *L) {
   lua_pushboolean(L, 1);

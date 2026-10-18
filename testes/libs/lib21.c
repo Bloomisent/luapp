@@ -1,4 +1,4 @@
-#include "lua.h"
+#include "../../lua.h"
 
 
 int luaopen_lib2 (lua_State *L);

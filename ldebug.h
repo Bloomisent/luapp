@@ -37,8 +37,9 @@
 
 
 LUAI_FUNC int luaG_getfuncline (const Proto *f, int pc);
-LUAI_FUNC const char *luaG_findlocal (lua_State *L, CallInfo *ci, int n,
-                                                    StkId *pos);
+LUAI_FUNC const char *luaG_findlocal (lua_State *L, CallInfo *ci, int n, StkId *pos);
+
+l_noret luaG_typecheckerror (lua_State *L, const TValue *o, int mask);
 LUAI_FUNC l_noret luaG_typeerror (lua_State *L, const TValue *o,
                                                 const char *opname);
 LUAI_FUNC l_noret luaG_callerror (lua_State *L, const TValue *o);

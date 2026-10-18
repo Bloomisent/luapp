@@ -29,7 +29,7 @@ typedef enum BinOpr {
   OPR_DIV, OPR_IDIV,
   /* bitwise operators */
   OPR_BAND, OPR_BOR, OPR_BXOR,
-  OPR_SHL, OPR_SHR,
+  OPR_SHL, OPR_SHR, OPR_NILUSE,
   /* string operator */
   OPR_CONCAT,
   /* comparison operators */

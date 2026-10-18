@@ -1,0 +1,9 @@
+local M = {};
+
+M.version = "1.0.0";
+
+function M.say_hello(name)
+    print("Hello, " .. name .. "!");
+end
+
+return M;

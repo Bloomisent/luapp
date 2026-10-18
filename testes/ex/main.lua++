@@ -1,0 +1,49 @@
+local io = require("io");
+
+print("Hello World!");
+
+local x = 1;
+
+if (1 != 2) then
+    print("yesn't i say");
+    x += 1;
+end
+
+print(x);
+
+local t = {1, 2, 3};
+
+t[1] += 1;
+
+for i, v in ipairs(t) do
+    print(i, v);
+end
+
+print("PROGRESS OF 'e':");
+
+local e = 20;
+e /= 2;
+print("", e);
+e += 26;
+print("", e);
+e ^= 2;
+print("", e);
+e %= 6;
+print("", e);
+
+local x = 3213.22;
+local e = x;
+local v = x;
+e //= 3;
+v /= 3;
+print("COMPARING FLOORED VS NORMAL DIVISION of (3213.22):");
+print("", e, "(floored)");
+print("", v, "(normal)");
+
+local money = 90;
+money--;
+print(money);
+money++;
+print(money);
+
+io.write("Goodbye World!", "\n");

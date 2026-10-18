@@ -1,4 +1,4 @@
-#include "lua.h"
+#include "../../lua.h"
 
 /* function from lib1.c */
 LUAMOD_API int lib1_export (lua_State *L);

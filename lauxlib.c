@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <ctype.h>
 
 /*
 ** This file uses only the official API of Lua.
@@ -38,7 +38,11 @@
 #define LEVELS1	10	/* size of the first part of the stack */
 #define LEVELS2	11	/* size of the second part of the stack */
 
-
+static const char *allowed_exts[] = {
+  ".luapp",
+  ".lua++",
+  NULL
+};
 
 /*
 ** Search for 'objidx' in table at index -1. ('objidx' must be an
@@ -818,46 +822,109 @@ static int skipcomment (FILE *f, int *cp) {
 }
 
 
-LUALIB_API int luaL_loadfilex (lua_State *L, const char *filename,
-                                             const char *mode) {
-  LoadF lf;
-  int status, readstatus;
-  int c;
-  int fnameindex = lua_gettop(L) + 1;  /* index of filename on the stack */
-  if (filename == NULL) {
-    lua_pushliteral(L, "=stdin");
-    lf.f = stdin;
+static int match_ext_token(const char *token, const char *ext) {
+  size_t tlen = strlen(token);
+  size_t elen = strlen(ext);
+  size_t i;
+
+  /* normalize token and ext to lower-case compare without allocating */
+  if (tlen == 0) return 0;
+
+  if (token[0] == '.') {
+    /* token like ".c" -> compare whole ext against token */
+    if (tlen != elen) return 0;
+    for (i = 0; i < elen; i++)
+      if (tolower((unsigned char)token[i]) != tolower((unsigned char)ext[i]))
+        return 0;
+    return 1;
   }
   else {
-    lua_pushfstring(L, "@%s", filename);
-    errno = 0;
-    lf.f = fopen(filename, "r");
-    if (lf.f == NULL) return errfile(L, "open", fnameindex);
+    /* token like "c" -> compare ext without the leading dot */
+    if (ext[0] != '.') return 0;
+    if (tlen != elen - 1) return 0;
+    for (i = 0; i < tlen; i++)
+      if (tolower((unsigned char)token[i]) != tolower((unsigned char)ext[1 + i]))
+        return 0;
+    return 1;
   }
-  lf.n = 0;
-  if (skipcomment(lf.f, &c))  /* read initial portion */
-    lf.buff[lf.n++] = '\n';  /* add newline to correct line numbers */
-  if (c == LUA_SIGNATURE[0]) {  /* binary file? */
-    lf.n = 0;  /* remove possible newline */
-    if (filename) {  /* "real" file? */
-      errno = 0;
-      lf.f = freopen(filename, "rb", lf.f);  /* reopen in binary mode */
-      if (lf.f == NULL) return errfile(L, "reopen", fnameindex);
-      skipcomment(lf.f, &c);  /* re-read initial portion */
+}
+
+static int allow_extension(const char *filename) {
+  const char *base;
+  const char *dot;
+  const char **p;
+
+  if (filename == NULL) return 1; /* stdin or no filename allowed */
+
+  /* strip path */
+  base = filename;
+  {
+    const char *s1 = strrchr(filename, '/');
+    const char *s2 = strrchr(filename, '\\');
+    if (s1 != NULL || s2 != NULL) {
+      const char *last = (s1 > s2) ? s1 : s2;
+      base = last + 1;
     }
   }
-  if (c != EOF)
-    lf.buff[lf.n++] = cast_char(c);  /* 'c' is the first character */
-  status = lua_load(L, getF, &lf, lua_tostring(L, -1), mode);
-  readstatus = ferror(lf.f);
-  errno = 0;  /* no useful error number until here */
-  if (filename) fclose(lf.f);  /* close file (even in case of errors) */
-  if (readstatus) {
-    lua_settop(L, fnameindex);  /* ignore results from 'lua_load' */
-    return errfile(L, "read", fnameindex);
+
+  /* find extension (including leading dot) */
+  dot = strrchr(base, '.');
+  if (dot == NULL) return 0; /* no extension -> disallowed */
+
+  for (p = allowed_exts; *p != NULL; p++) {
+    if (match_ext_token(*p, dot)) return 1;
   }
-  lua_remove(L, fnameindex);
-  return status;
+  return 0;
+}
+
+LUALIB_API int luaL_loadfilex (lua_State *L, const char *filename, const char *mode) {
+    LoadF lf;
+    int status, readstatus;
+    int c;
+    int fnameindex = lua_gettop(L) + 1;  /* index of filename on the stack */
+
+    /* Interceptor: reject files whose extension is not in allowed_exts */
+    if (filename != NULL && !allow_extension(filename)) {
+        lua_pushfstring(L, "cannot load %s: disallowed extension", filename);
+        return LUA_ERRFILE;
+    }
+
+    if (filename == NULL) {
+        lua_pushliteral(L, "=stdin");
+        lf.f = stdin;
+    }
+    else {
+        lua_pushfstring(L, "@%s", filename);
+        errno = 0;
+        lf.f = fopen(filename, "r");
+        if (lf.f == NULL) {
+            return errfile(L, "open", fnameindex);
+        }
+    }
+    lf.n = 0;
+    if (skipcomment(lf.f, &c))  /* read initial portion */
+    lf.buff[lf.n++] = '\n';  /* add newline to correct line numbers */
+    if (c == LUA_SIGNATURE[0]) {  /* binary file? */
+        lf.n = 0;  /* remove possible newline */
+        if (filename) {  /* "real" file? */
+          errno = 0;
+          lf.f = freopen(filename, "rb", lf.f);  /* reopen in binary mode */
+          if (lf.f == NULL) return errfile(L, "reopen", fnameindex);
+          skipcomment(lf.f, &c);  /* re-read initial portion */
+        }
+    }
+    if (c != EOF)
+    lf.buff[lf.n++] = cast_char(c);  /* 'c' is the first character */
+    status = lua_load(L, getF, &lf, lua_tostring(L, -1), mode);
+    readstatus = ferror(lf.f);
+    errno = 0;  /* no useful error number until here */
+    if (filename) fclose(lf.f);  /* close file (even in case of errors) */
+    if (readstatus) {
+        lua_settop(L, fnameindex);  /* ignore results from 'lua_load' */
+        return errfile(L, "read", fnameindex);
+    }
+    lua_remove(L, fnameindex);
+    return status;
 }
 
 

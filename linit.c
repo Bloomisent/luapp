@@ -47,6 +47,21 @@ LUALIB_API void luaL_openselectedlibs (lua_State *L, int load, int preload) {
   int mask;
   const luaL_Reg *lib;
   luaL_getsubtable(L, LUA_REGISTRYINDEX, LUA_PRELOAD_TABLE);
+  static const char *classsrc =
+      "function __class(name, base)\n"
+      "  local c = {}\n"
+      "  c.__index = c\n"
+      "  c.__name = name\n"
+      "  c.__base = base\n"
+      "  return setmetatable(c, {\n"
+      "    __index = base,\n"
+      "    __call = function(cls, ...)\n"
+      "      local o = setmetatable({}, cls)\n"
+      "      if cls.init then cls.init(o, ...) end\n"
+      "      return o\n"
+      "    end\n"
+      "  })\n"
+      "end\n";
   for (lib = stdlibs, mask = 1; lib->name != NULL; lib++, mask <<= 1) {
     if (load & mask) {  /* selected? */
       luaL_requiref(L, lib->name, lib->func, 1);  /* require library */
@@ -59,5 +74,6 @@ LUALIB_API void luaL_openselectedlibs (lua_State *L, int load, int preload) {
   }
   lua_assert((mask >> 1) == LUA_UTF8LIBK);
   lua_pop(L, 1);  /* remove PRELOAD table */
+  if (luaL_dostring(L, classsrc) != LUA_OK) lua_error(L);
 }
 

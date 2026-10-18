@@ -116,14 +116,15 @@ typedef struct expdesc {
 
 /* description of an active variable */
 typedef union Vardesc {
-  struct {
-    TValuefields;  /* constant value (if it is a compile-time constant) */
-    lu_byte kind;
-    lu_byte ridx;  /* register holding the variable */
-    short pidx;  /* index of the variable in the Proto's 'locvars' array */
-    TString *name;  /* variable name */
-  } vd;
-  TValue k;  /* constant value (if any) */
+    struct {
+        TValuefields;  /* constant value (if it is a compile-time constant) */
+        lu_byte kind;
+        lu_byte ridx;  /* register holding the variable */
+        short pidx;  /* index of the variable in the Proto's 'locvars' array */
+        int tmask;
+        TString *name;  /* variable name */
+    } vd;
+    TValue k;  /* constant value (if any) */
 } Vardesc;
 
 

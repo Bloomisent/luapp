@@ -1,0 +1,33 @@
+class Animal
+  function init(name : string)          ## constructor, called by Animal("x")
+    self.name = name
+  end
+  function speak()
+    print(self.name .. " makes a sound")
+  end
+end
+
+class Dog extends Animal
+  function init(name : string)
+    super.init(self, name)    ## super only works with extends
+  end
+  function speak()
+    print(self.name .. " barks")
+  end
+end
+
+class Human extends Animal
+  function init(name : string)
+    super.init(self, name)    ## super only works with extends
+  end
+  function speak(message : string)
+    print(self.name .. " says '".. message.."'")
+  end
+end
+
+local d = Dog("Rex")
+local h = Human("Mike")
+d:speak();
+h:speak("Good boy "..(d.name).."!");
+
+## Classes are just wrappers for metatables!

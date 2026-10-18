@@ -59,6 +59,7 @@ static int currentpc (CallInfo *ci) {
 ** value for MAXIWTHABS or smaller. (Previous releases use a little
 ** smaller value.)
 */
+
 static int getbaseline (const Proto *f, int pc, int *basepc) {
   if (f->sizeabslineinfo == 0 || pc < f->abslineinfo[0].pc) {
     *basepc = -1;  /* start from the beginning */
@@ -737,6 +738,28 @@ static const char *varinfo (lua_State *L, const TValue *o) {
     }
   }
   return formatvarinfo(L, kind, name);
+}
+
+/*
+** Raise a type-check error
+*/
+
+l_noret luaG_typecheckerror (lua_State *L, const TValue *o, int mask) {
+  char buff[128];
+  int t;
+  buff[0] = '\0';
+  for (t = 0; t < LUA_NUMTYPES; t++) {
+    if (t == LUA_TLIGHTUSERDATA) continue;  /* shown as 'userdata' */
+    if (mask & (1 << t)) {
+      if (buff[0]) strcat(buff, "|");
+      strcat(buff, ttypename(t));
+    }
+  }
+  if ((mask & TMASK_INT) && !(mask & (1 << LUA_TNUMBER))) {
+    if (buff[0]) strcat(buff, "|");
+    strcat(buff, "integer");
+  }
+  luaG_runerror(L, "type mismatch%s: expected %s, got %s", varinfo(L, o), buff, luaT_objtypename(L, o));
 }
 
 
