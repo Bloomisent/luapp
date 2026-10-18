@@ -1,7 +1,7 @@
 /*
 ** $Id: lua.c $
-** Lua stand-alone interpreter
-** See Copyright Notice in lua.h
+** Lua++ stand-alone interpreter
+** See Copyright Notice fr Lua++ and Lua in lua.h
 */
 
 #define lua_c
@@ -20,7 +20,6 @@
 #include "lauxlib.h"
 #include "lualib.h"
 #include "llimits.h"
-
 
 #if !defined(LUA_PROGNAME)
 #define LUA_PROGNAME		"lua"
@@ -207,12 +206,12 @@ static int dochunk (lua_State *L, int status) {
 
 
 static int dofile (lua_State *L, const char *name) {
-  return dochunk(L, luaL_loadfilex(L, name, "bt"));
+    return dochunk(L, luaL_loadfilex(L, name, "bt"));
 }
 
 
 static int dostring (lua_State *L, const char *s, const char *name) {
-  return dochunk(L, luaL_loadbufferx(L, s, strlen(s), name, "t"));
+    return dochunk(L, luaL_loadbufferx(L, s, strlen(s), name, "t"));
 }
 
 
@@ -222,26 +221,26 @@ static int dostring (lua_State *L, const char *s, const char *name) {
 ** the suffix after '-' (the "version") to make the global name.
 */
 static int dolibrary (lua_State *L, char *globname) {
-  int status;
-  char *suffix = NULL;
-  char *modname = strchr(globname, '=');
-  if (modname == NULL) {  /* no explicit name? */
+    int status;
+    char *suffix = NULL;
+    char *modname = strchr(globname, '=');
+    if (modname == NULL) {  /* no explicit name? */
     modname = globname;  /* module name is equal to global name */
     suffix = strchr(modname, *LUA_IGMARK);  /* look for a suffix mark */
-  }
-  else {
+    }
+    else {
     *modname = '\0';  /* global name ends here */
     modname++;  /* module name starts after the '=' */
-  }
-  lua_getglobal(L, "require");
-  lua_pushstring(L, modname);
-  status = docall(L, 1, 1);  /* call 'require(modname)' */
-  if (status == LUA_OK) {
+    }
+    lua_getglobal(L, "require");
+    lua_pushstring(L, modname);
+    status = docall(L, 1, 1);  /* call 'require(modname)' */
+    if (status == LUA_OK) {
     if (suffix != NULL)  /* is there a suffix mark? */
       *suffix = '\0';  /* remove suffix from global name */
     lua_setglobal(L, globname);  /* globname = require(modname) */
-  }
-  return report(L, status);
+    }
+    return report(L, status);
 }
 
 
@@ -249,29 +248,29 @@ static int dolibrary (lua_State *L, char *globname) {
 ** Push on the stack the contents of table 'arg' from 1 to #arg
 */
 static int pushargs (lua_State *L) {
-  int i, n;
-  if (lua_getglobal(L, "arg") != LUA_TTABLE)
+    int i, n;
+    if (lua_getglobal(L, "arg") != LUA_TTABLE)
     luaL_error(L, "'arg' is not a table");
-  n = (int)luaL_len(L, -1);
-  luaL_checkstack(L, n + 3, "too many arguments to script");
-  for (i = 1; i <= n; i++)
+    n = (int)luaL_len(L, -1);
+    luaL_checkstack(L, n + 3, "too many arguments to script");
+    for (i = 1; i <= n; i++)
     lua_rawgeti(L, -i, i);
-  lua_remove(L, -i);  /* remove table from the stack */
-  return n;
+    lua_remove(L, -i);  /* remove table from the stack */
+    return n;
 }
 
 
 static int handle_script (lua_State *L, char **argv) {
-  int status;
-  const char *fname = argv[0];
-  if (strcmp(fname, "-") == 0 && strcmp(argv[-1], "--") != 0)
+    int status;
+    const char *fname = argv[0];
+    if (strcmp(fname, "-") == 0 && strcmp(argv[-1], "--") != 0)
     fname = NULL;  /* stdin */
-  status = luaL_loadfilex(L, fname, "bt");
-  if (status == LUA_OK) {
+    status = luaL_loadfilex(L, fname, "bt");
+    if (status == LUA_OK) {
     int n = pushargs(L);  /* push arguments to script */
     status = docall(L, n, LUA_MULTRET);
-  }
-  return report(L, status);
+    }
+    return report(L, status);
 }
 
 
@@ -291,60 +290,61 @@ static int handle_script (lua_State *L, char **argv) {
 ** 0 if there is no script name, or the index of the script name.
 */
 static int collectargs (char **argv, int *first) {
-  int args = 0;
-  int i;
-  if (argv[0] != NULL) {  /* is there a program name? */
-    if (argv[0][0])  /* not empty? */
-      progname = argv[0];  /* save it */
-  }
-  else {  /* no program name */
-    *first = -1;
-    return 0;
-  }
-  for (i = 1; argv[i] != NULL; i++) {  /* handle arguments */
-    *first = i;
-    if (argv[i][0] != '-')  /* not an option? */
-        return args;  /* stop handling options */
-    switch (argv[i][1]) {  /* else check option */
-      case '-':  /* '--' */
-        if (argv[i][2] != '\0')  /* extra characters after '--'? */
-          return has_error;  /* invalid option */
-        /* if there is a script name, it comes after '--' */
-        *first = (argv[i + 1] != NULL) ? i + 1 : 0;
-        return args;
-      case '\0':  /* '-' */
-        return args;  /* script "name" is '-' */
-      case 'E':
-        if (argv[i][2] != '\0')  /* extra characters? */
-          return has_error;  /* invalid option */
-        args |= has_E;
-        break;
-      case 'W':
-        if (argv[i][2] != '\0')  /* extra characters? */
-          return has_error;  /* invalid option */
-        break;
-      case 'i':
-        args |= has_i;  /* (-i implies -v) *//* FALLTHROUGH */
-      case 'v':
-        if (argv[i][2] != '\0')  /* extra characters? */
-          return has_error;  /* invalid option */
-        args |= has_v;
-        break;
-      case 'e':
-        args |= has_e;  /* FALLTHROUGH */
-      case 'l':  /* both options need an argument */
-        if (argv[i][2] == '\0') {  /* no concatenated argument? */
-          i++;  /* try next 'argv' */
-          if (argv[i] == NULL || argv[i][0] == '-')
-            return has_error;  /* no next argument or it is another option */
+    int args = 0;
+    int i;
+    if (argv[0] != NULL) {  /* is there a program name? */
+        if (argv[0][0])  /* not empty? */
+          progname = argv[0];  /* save it */
         }
-        break;
-      default:  /* invalid option */
-        return has_error;
+    else {  /* no program name */
+        *first = -1;
+        return 0;
     }
-  }
-  *first = 0;  /* no script name */
-  return args;
+    for (i = 1; argv[i] != NULL; i++) {  /* handle arguments */
+        *first = i;
+        if (argv[i][0] != '-') { /* not an option? */
+            return args;  /* stop handling options */
+        }
+        switch (argv[i][1]) {  /* else check option */
+          case '-':  /* '--' */
+            if (argv[i][2] != '\0')  /* extra characters after '--'? */
+              return has_error;  /* invalid option */
+            /* if there is a script name, it comes after '--' */
+            *first = (argv[i + 1] != NULL) ? i + 1 : 0;
+            return args;
+          case '\0':  /* '-' */
+            return args;  /* script "name" is '-' */
+          case 'E':
+            if (argv[i][2] != '\0')  /* extra characters? */
+              return has_error;  /* invalid option */
+            args |= has_E;
+            break;
+          case 'W':
+            if (argv[i][2] != '\0')  /* extra characters? */
+              return has_error;  /* invalid option */
+            break;
+          case 'i':
+            args |= has_i;  /* (-i implies -v) *//* FALLTHROUGH */
+          case 'v':
+            if (argv[i][2] != '\0')  /* extra characters? */
+              return has_error;  /* invalid option */
+            args |= has_v;
+            break;
+          case 'e':
+            args |= has_e;  /* FALLTHROUGH */
+          case 'l':  /* both options need an argument */
+            if (argv[i][2] == '\0') {  /* no concatenated argument? */
+              i++;  /* try next 'argv' */
+              if (argv[i] == NULL || argv[i][0] == '-')
+                return has_error;  /* no next argument or it is another option */
+            }
+            break;
+          default:  /* invalid option */
+            return has_error;
+        }
+    }
+    *first = 0;  /* no script name */
+    return args;
 }
 
 

@@ -1968,6 +1968,15 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
         updatebase(ci);  /* function has new base after adjustment */
         vmbreak;
       }
+      vmcase(OP_CHECKTYPE) {
+        StkId ra = RA(i);
+        TValue *o = s2v(ra);
+        int mask = GETARG_Bx(i);
+        if (l_unlikely(!((mask & (1 << ttype(o))) ||
+                         ((mask & TMASK_INT) && ttisinteger(o)))))
+          Protect(luaG_typecheckerror(L, o, mask));
+        vmbreak;
+      }
       vmcase(OP_EXTRAARG) {
         lua_assert(0);
         vmbreak;
